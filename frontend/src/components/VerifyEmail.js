@@ -72,10 +72,6 @@ const VerifyEmail = () => {
 
       console.log('Fetched email record:', emailRecord);
 
-      if (emailRecord.status !== 'pending') {
-        throw new Error('Email already verified or disabled');
-      }
-
       if (new Date(emailRecord.verification_code_expires_at) < new Date()) {
         throw new Error('Verification code has expired');
       }
