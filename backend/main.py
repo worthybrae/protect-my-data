@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sendgrid import SendGridAPIClient
@@ -7,10 +7,6 @@ from dotenv import load_dotenv
 import os
 import random
 import string
-from contextlib import asynccontextmanager
-from fastapi_limiter import FastAPILimiter
-from fastapi_limiter.depends import RateLimiter
-import redis.asyncio as redis
 import hashlib
 
 load_dotenv()
@@ -19,24 +15,12 @@ load_dotenv()
 sendgrid_api_key = os.getenv("SENDGRID_API_KEY")
 sendgrid_from_email = os.getenv("SENDGRID_FROM_EMAIL")
 
-# Redis setup for rate limiting
-redis_url = os.getenv("REDIS_URL", "redis://localhost")
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    redis_client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(redis_client)
-    yield
-    # Shutdown
-    await redis_client.close()
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,10 +52,7 @@ def send_verification_email(to_email: str, code: str):
         return False
 
 @app.post("/send-verification-email")
-async def send_email(
-    email_request: EmailSendRequest,
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=30, seconds=3600))  # 5 requests per hour
-):
+async def send_email(email_request: EmailSendRequest):
     verification_code = generate_verification_code()
     hashed_code = hash_code(verification_code)
     email_sent = send_verification_email(email_request.email_address, verification_code)

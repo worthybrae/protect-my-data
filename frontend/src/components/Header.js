@@ -9,7 +9,7 @@ const Header = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/signin');
+      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error.message);
     }
@@ -27,7 +27,7 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link to="/signin" className="mr-4">Sign In</Link>
+              <Link to="/auth" className="mr-4">Sign In</Link>
               <Link to="/signup" className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Sign Up</Link>
             </>
           )}
