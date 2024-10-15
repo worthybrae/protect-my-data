@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
@@ -8,16 +8,13 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const UserEmails = () => {
   const [emails, setEmails] = useState([]);
   const [newEmail, setNewEmail] = useState('');
+  const [showAddEmail, setShowAddEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchEmails();
-  }, [user.id]);
-
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('emails')
@@ -30,14 +27,17 @@ const UserEmails = () => {
       console.error('Error fetching emails:', error);
       setError('Failed to fetch emails. Please try again.');
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => {
+    fetchEmails();
+  }, [fetchEmails]);
 
   const addEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      // First, send the verification email
       const response = await fetch(`${API_URL}/send-verification-email`, {
         method: 'POST',
         headers: {
@@ -53,7 +53,6 @@ const UserEmails = () => {
 
       const { hashed_code } = await response.json();
 
-      // Then, add the email to Supabase with the hashed verification code
       const { data, error } = await supabase
         .from('emails')
         .insert({
@@ -69,6 +68,7 @@ const UserEmails = () => {
 
       console.log('Email added and verification sent successfully');
       setNewEmail('');
+      setShowAddEmail(false);
       fetchEmails();
       navigate('/verify-email', { state: { email_id: data[0].id, email_address: newEmail } });
     } catch (error) {
@@ -80,39 +80,60 @@ const UserEmails = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8">
+    <div className="bg-white bg-opacity-10 rounded-lg p-6">
       <h2 className="text-2xl font-bold mb-4">Your Emails</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <ul className="mb-4">
+      {error && <p className="text-red-300 mb-4">{error}</p>}
+      <ul className="mb-4 space-y-2">
         {emails.map((email) => (
-          <li key={email.id} className="flex justify-between items-center mb-2">
+          <li key={email.id} className="flex justify-between items-center">
             <span>{email.email_address}</span>
-            <span className={`text-sm ${email.status === 'active' ? 'text-green-500' : 'text-yellow-500'}`}>
+            <span className={`text-sm ${email.status === 'active' ? 'text-green-300' : 'text-yellow-300'}`}>
               {email.status}
             </span>
           </li>
         ))}
       </ul>
-      <form onSubmit={addEmail} className="space-y-4">
-        <div>
-          <label htmlFor="newEmail" className="block mb-1">Add New Email</label>
-          <input
-            type="email"
-            id="newEmail"
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-            required
-          />
-        </div>
-        <button 
-          type="submit" 
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
-          disabled={loading}
+      {!showAddEmail && (
+        <button
+          onClick={() => setShowAddEmail(true)}
+          className="flex items-center text-white hover:text-gray-200 transition-colors duration-200"
         >
-          {loading ? 'Adding...' : 'Add Email'}
+          <svg className="w-5 h-5 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Email
         </button>
-      </form>
+      )}
+      {showAddEmail && (
+        <form onSubmit={addEmail} className="mt-4 space-y-4">
+          <div>
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="w-full px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded text-white placeholder-gray-300"
+              placeholder="Enter new email"
+              required
+            />
+          </div>
+          <div className="flex space-x-2">
+            <button 
+              type="submit" 
+              className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 transition-colors duration-200 disabled:bg-indigo-400"
+              disabled={loading}
+            >
+              {loading ? 'Adding...' : 'Add Email'}
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setShowAddEmail(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };

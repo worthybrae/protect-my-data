@@ -70,7 +70,7 @@ def send_verification_email(to_email: str, code: str):
 @app.post("/send-verification-email")
 async def send_email(
     email_request: EmailSendRequest,
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=5, seconds=3600))  # 5 requests per hour
+    rate_limiter: RateLimiter = Depends(RateLimiter(times=30, seconds=3600))  # 5 requests per hour
 ):
     verification_code = generate_verification_code()
     hashed_code = hash_code(verification_code)
