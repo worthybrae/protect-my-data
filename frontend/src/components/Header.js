@@ -1,35 +1,37 @@
-// src/components/Header.js
 import React from 'react';
-import { UserIcon } from '@heroicons/react/24/solid';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const Header = ({ user, onSignInClick, onSignUpClick, onLogout }) => {
+const Header = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/signin');
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
+  };
+
   return (
-    <header className="bg-blue-600 text-white">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Protect My Data</h1>
-        <div className="flex items-center space-x-4">
+    <header className="bg-gray-800 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-xl font-bold">User Management</Link>
+        <nav>
           {user ? (
             <>
-              <span>{user.email}</span>
-              <UserIcon className="h-6 w-6 text-white cursor-pointer" onClick={onLogout} />
+              <Link to="/profile" className="mr-4">Profile</Link>
+              <button onClick={handleSignOut} className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Sign Out</button>
             </>
           ) : (
             <>
-              <button
-                onClick={onSignInClick}
-                className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-100 transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={onSignUpClick}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-400 transition-colors"
-              >
-                Create Account
-              </button>
+              <Link to="/signin" className="mr-4">Sign In</Link>
+              <Link to="/signup" className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Sign Up</Link>
             </>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );
